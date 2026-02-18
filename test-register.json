@@ -1,0 +1,6 @@
+{
+  "name": "Test Teacher",
+  "email": "teacher.test@ecoverse.com",
+  "password": "SecurePass123",
+  "role": "teacher"
+}
