@@ -9,8 +9,7 @@ import {
   ModernSection,
   ModernStatCard,
 } from '../components/ModernComponents';
-import { modernDesignSystem, layoutConstants } from '../theme/modernDesignSystem';
-
+// removed unused modernDesignSystem and layoutConstants imports
 const Achievements = () => {
   const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(true);

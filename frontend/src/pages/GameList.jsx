@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+// removed unused useAuth import
 import gameService from '../services/gameService';
 import ModernSidebar from '../components/ModernSidebar';
 import ModernTopNavbar from '../components/ModernTopNavbar';
@@ -10,13 +10,12 @@ import {
   ModernCard,
   ModernButton,
   ModernSection,
-  ModernBadge,
 } from '../components/ModernComponents';
-import { modernDesignSystem, layoutConstants } from '../theme/modernDesignSystem';
+// removed unused ModernBadge, modernDesignSystem, and layoutConstants imports
 
 const GameList = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  // user not required in this view
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -43,11 +42,7 @@ const GameList = () => {
     loadGames();
   }, []);
 
-  const difficultyColors = {
-    easy: 'bg-green-100 text-green-800 border-green-300',
-    medium: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-    hard: 'bg-red-100 text-red-800 border-red-300',
-  };
+  // removed unused difficultyColors mapping
 
   const categoryIcons = {
     'renewable-energy': '⚡',

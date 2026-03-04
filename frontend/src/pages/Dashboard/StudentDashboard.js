@@ -17,11 +17,11 @@ import {
 } from '../../components/ModernComponents';
 
 const StudentDashboard = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [forest, setForest] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [, setLoading] = useState(true);
+  const [, setError] = useState('');
   const [games, setGames] = useState([]);
   const [gamesLoading, setGamesLoading] = useState(false);
   const [selectedGameId, setSelectedGameId] = useState(null);
@@ -69,36 +69,7 @@ const StudentDashboard = () => {
     loadGames();
   }, []);
 
-  // Get forest visual based on state
-  const getForestVisuals = (state) => {
-    const visuals = {
-      polluted: {
-        bg: 'bg-red-100',
-        border: 'border-red-300',
-        icon: '💔',
-        emoji: '💨',
-        label: 'Polluted',
-        color: 'text-red-700',
-      },
-      growing: {
-        bg: 'bg-yellow-100',
-        border: 'border-yellow-300',
-        icon: '🌱',
-        emoji: '🌿',
-        label: 'Growing',
-        color: 'text-yellow-700',
-      },
-      healthy: {
-        bg: 'bg-green-100',
-        border: 'border-green-300',
-        icon: '🌳',
-        emoji: '🌲',
-        label: 'Healthy',
-        color: 'text-green-700',
-      },
-    };
-    return visuals[state] || visuals.polluted;
-  };
+  // Removed unused `getForestVisuals` helper to satisfy linter
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
