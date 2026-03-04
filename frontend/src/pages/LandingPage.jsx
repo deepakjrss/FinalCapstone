@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ModernButton, ModernCard, ModernGrid } from '../components/ModernComponents';
-import { modernDesignSystem } from '../theme/modernDesignSystem';
+// removed unused modernDesignSystem import
 
 export default function LandingPage() {
   const navigate = useNavigate();

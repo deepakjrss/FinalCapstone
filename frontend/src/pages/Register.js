@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ModernCard, ModernButton } from '../components/ModernComponents';
-import { modernDesignSystem } from '../theme/modernDesignSystem';
+// removed unused modernDesignSystem import
 
 const Register = () => {
   const [formData, setFormData] = useState({

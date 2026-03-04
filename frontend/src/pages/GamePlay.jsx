@@ -10,12 +10,12 @@ import {
   ModernButton,
   ModernGrid,
 } from '../components/ModernComponents';
-import { modernDesignSystem, layoutConstants } from '../theme/modernDesignSystem';
+// removed unused design system imports to fix build lint errors
 
 const GamePlay = () => {
   const navigate = useNavigate();
   const { gameId } = useParams();
-  const { user } = useAuth();
+  // `user` not required in this component
 
   const [game, setGame] = useState(null);
   const [loading, setLoading] = useState(true);

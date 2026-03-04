@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { ModernCard, ModernButton, ModernInput } from '../components/ModernComponents'
-import { modernDesignSystem } from '../theme/modernDesignSystem'
+import { ModernCard, ModernButton } from '../components/ModernComponents'
+// removed unused ModernInput and modernDesignSystem imports
 
 export default function Login() {
   const [email, setEmail] = useState('')
