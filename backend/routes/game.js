@@ -6,7 +6,8 @@ const {
   getGameById,
   submitGameAttempt,
   getStudentGameStats,
-  getStudentAttempts
+  getStudentAttempts,
+  generateQuiz
 } = require('../controllers/gameController');
 
 /**
@@ -51,6 +52,14 @@ router.get(
  * Get single game details
  * Access: Student only (protected)
  */
+// dynamic quiz generation endpoint
+router.get(
+  '/generate-quiz',
+  verifyToken,
+  authorizeRoles('student'),
+  generateQuiz
+);
+
 router.get(
   '/:id',
   verifyToken,

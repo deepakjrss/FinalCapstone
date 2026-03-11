@@ -4,6 +4,14 @@ const User = require('../models/User');
 const Forest = require('../models/Forest');
 const { checkAndAwardBadges } = require('./badgeController');
 
+// OpenAI client for quiz generation
+const OpenAI = require('openai');
+
+if (!process.env.OPENAI_API_KEY) {
+  console.warn('Warning: OPENAI_API_KEY not set. /api/games/generate-quiz will fail without it.');
+}
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
 /**
  * Get all available games
  * GET /api/games
@@ -197,6 +205,86 @@ exports.submitGameAttempt = async (req, res) => {
 
     // Check and award badges
     const newlyEarnedBadges = await checkAndAwardBadges(student._id);
+  } catch (error) {
+    console.error('Error submitting game attempt:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to submit game attempt',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Generate AI quiz questions
+ * GET /api/games/generate-quiz
+ * Access: Student only (protected)
+ */
+exports.generateQuiz = async (req, res) => {
+  try {
+    const systemPrompt =
+      "You are an environmental science quiz generator for middle school students (grades 6–8).\n" +
+      "Generate 5 multiple choice questions about environment, recycling, climate change, forests, or pollution.\n" +
+      "Each question must include:\n" +
+      "- questionText\n" +
+      "- 4 options\n" +
+      "- correctAnswer index (0–3).\n" +
+      "Keep questions simple and educational.\n" +
+      "Respond with a valid JSON object that has a 'questions' array using the following structure:\n" +
+      "{questions:[{questionText:'...',options:['','', '',''],correctAnswer:0}, ...]}";
+
+    const aiResponse = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [{ role: 'system', content: systemPrompt }],
+      max_tokens: 500,
+      temperature: 0.7
+    });
+
+    const text = aiResponse.choices?.[0]?.message?.content;
+    if (!text) {
+      return res.status(500).json({
+        success: false,
+        message: 'AI did not return any content'
+      });
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch (parseErr) {
+      console.error('Failed to parse AI quiz output:', text, parseErr);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to parse AI response',
+        raw: text
+      });
+    }
+
+    // simple validation
+    if (!parsed.questions || !Array.isArray(parsed.questions)) {
+      return res.status(500).json({
+        success: false,
+        message: 'Invalid quiz format from AI',
+        raw: parsed
+      });
+    }
+
+    res.status(200).json({ success: true, questions: parsed.questions });
+  } catch (error) {
+    console.error('Error generating quiz:', error);
+    if (error.response && error.response.data) {
+      return res.status(error.response.status || 500).json({
+        success: false,
+        message: error.response.data.error?.message || 'AI service error'
+      });
+    }
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate quiz',
+      error: error.message
+    });
+  }
+};
 
     // Update forest for student's class
     let forest = await Forest.getOrCreate(student.className);
