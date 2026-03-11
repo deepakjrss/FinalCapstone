@@ -205,6 +205,41 @@ exports.submitGameAttempt = async (req, res) => {
 
     // Check and award badges
     const newlyEarnedBadges = await checkAndAwardBadges(student._id);
+
+    // Update forest for student's class
+    let forest = await Forest.getOrCreate(student.className);
+    forest.ecoScore += pointsEarned;
+    await forest.save(); // Pre-save hook will update forestState
+
+    // Populate attempt data for response
+    await attempt.populate('game', 'title maxPoints minPassScore');
+
+    res.status(201).json({
+      success: true,
+      attempt: {
+        _id: attempt._id,
+        game: attempt.game,
+        score: attempt.score,
+        pointsEarned: attempt.pointsEarned,
+        passed: attempt.passed,
+        correctAnswers: correctCount,
+        totalQuestions: game.questions.length,
+        completedAt: attempt.completedAt
+      },
+      studentStats: {
+        ecoPoints: student.ecoPoints,
+        gamesPlayed: student.gamesPlayed,
+        className: student.className
+      },
+      forest: {
+        className: forest.className,
+        ecoScore: forest.ecoScore,
+        forestState: forest.forestState,
+        lastUpdated: forest.lastUpdated
+      },
+      badges: newlyEarnedBadges,
+      message: `Game completed! You scored ${scorePercentage.toFixed(1)}% and earned ${pointsEarned} eco-points.${newlyEarnedBadges.length > 0 ? ` 🎉 You earned ${newlyEarnedBadges.length} new badge(s)!` : ''}`
+    });
   } catch (error) {
     console.error('Error submitting game attempt:', error);
     res.status(500).json({
@@ -281,50 +316,6 @@ exports.generateQuiz = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to generate quiz',
-      error: error.message
-    });
-  }
-};
-
-    // Update forest for student's class
-    let forest = await Forest.getOrCreate(student.className);
-    forest.ecoScore += pointsEarned;
-    await forest.save(); // Pre-save hook will update forestState
-
-    // Populate attempt data for response
-    await attempt.populate('game', 'title maxPoints minPassScore');
-
-    res.status(201).json({
-      success: true,
-      attempt: {
-        _id: attempt._id,
-        game: attempt.game,
-        score: attempt.score,
-        pointsEarned: attempt.pointsEarned,
-        passed: attempt.passed,
-        correctAnswers: correctCount,
-        totalQuestions: game.questions.length,
-        completedAt: attempt.completedAt
-      },
-      studentStats: {
-        ecoPoints: student.ecoPoints,
-        gamesPlayed: student.gamesPlayed,
-        className: student.className
-      },
-      forest: {
-        className: forest.className,
-        ecoScore: forest.ecoScore,
-        forestState: forest.forestState,
-        lastUpdated: forest.lastUpdated
-      },
-      badges: newlyEarnedBadges,
-      message: `Game completed! You scored ${scorePercentage.toFixed(1)}% and earned ${pointsEarned} eco-points.${newlyEarnedBadges.length > 0 ? ` 🎉 You earned ${newlyEarnedBadges.length} new badge(s)!` : ''}`
-    });
-  } catch (error) {
-    console.error('Error submitting game attempt:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to submit game attempt',
       error: error.message
     });
   }
