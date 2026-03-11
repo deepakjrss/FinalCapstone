@@ -14,6 +14,7 @@ import GameList from './pages/GameList';
 import GamePlay from './pages/GamePlay';
 import Leaderboard from './pages/Leaderboard';
 import Achievements from './pages/Achievements';
+import AIChat from './pages/AIChat';
 import NotFound from './pages/NotFound';
 import Unauthorized from './pages/Unauthorized';
 
@@ -65,6 +66,14 @@ function App() {
             element={
               <PrivateRoute requiredRole="student">
                 <Achievements />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/ai-chat"
+            element={
+              <PrivateRoute>
+                <AIChat />
               </PrivateRoute>
             }
           />

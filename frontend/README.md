@@ -122,6 +122,15 @@ Frontend will run on `http://localhost:3000`
 - Logout button
 
 ### Admin Dashboard
+
+### AI Chat Page
+- Accessible via sidebar link "Forest Guardian AI" after login
+- Protected route (any authenticated user)
+- Chat interface with user messages on right, AI replies on left
+- Input area with textarea and send button
+- Messages animate into view
+- Calls `/api/chat` to retrieve AI responses
+
 - Welcome message with admin name
 - Profile information display
 - Feature cards (User Management, System Settings, Reports)

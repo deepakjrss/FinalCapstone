@@ -26,6 +26,8 @@ app.use('/api/forest', require('./routes/forest'));
 app.use('/api/games', require('./routes/game'));
 app.use('/api/badges', require('./routes/badgeRoutes'));
 app.use('/api/leaderboard', require('./routes/leaderboard'));
+// AI Forest Guardian chatbot endpoint
+app.use('/api/chat', require('./routes/chat'));
 
 // Health check route
 app.get('/api/health', (req, res) => {

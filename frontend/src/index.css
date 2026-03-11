@@ -74,6 +74,19 @@
 /* Ensure blobs and glow scale down on small screens */
 @media (max-width: 640px) {
   .eco-auth-bg::after { width: 600px; height: 360px; filter: blur(30px); }
+
+/* Chat bubble animations */
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-slide-in-left { animation: slideInLeft 0.3s ease; }
+.animate-slide-in-right { animation: slideInRight 0.3s ease; }
   .eco-auth-bg::before { background-size: 160px 160px; }
 }
 

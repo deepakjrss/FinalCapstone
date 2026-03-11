@@ -159,6 +159,30 @@ Server will run on `http://localhost:5000`
 
 ---
 
+## AI Forest Guardian Chatbot
+
+### Chat Route
+- **URL:** `POST /api/chat`
+- **Headers:**
+  - `Authorization: Bearer <token>` (must be authenticated)
+  - `Content-Type: application/json`
+- **Body:**
+  ```json
+  {
+    "message": "your question about the environment"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "reply": "AI response from Forest Guardian"
+  }
+  ```
+
+The endpoint forwards questions to OpenAI using a system prompt that guides the model to answer simply for middle school students and encourage eco-friendly behaviour. Ensure `OPENAI_API_KEY` is set in `.env`.
+
+---
+
 ## User Model
 
 ### Fields

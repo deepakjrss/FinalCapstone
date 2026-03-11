@@ -20,6 +20,7 @@ const ModernSidebar = () => {
         { icon: '📊', label: 'Dashboard', path: '/student-dashboard' },
         { icon: '🎮', label: 'Games', path: '/games' },
         { icon: '🌲', label: 'Forest', path: '/forest' },
+        { icon: '🤖', label: 'Forest Guardian AI', path: '/ai-chat' },
         { icon: '🏆', label: 'Leaderboard', path: '/leaderboard' },
         { icon: '🏅', label: 'Achievements', path: '/achievements' },
       ];
@@ -28,6 +29,7 @@ const ModernSidebar = () => {
         { icon: '📊', label: 'Dashboard', path: '/teacher-dashboard' },
         { icon: '👥', label: 'Classes', path: '/teacher-classes' },
         { icon: '📈', label: 'Analytics', path: '/teacher-analytics' },
+        { icon: '🤖', label: 'Forest Guardian AI', path: '/ai-chat' },
         { icon: '🏆', label: 'Leaderboard', path: '/leaderboard' },
       ];
     } else if (user?.role === 'admin') {
@@ -35,6 +37,7 @@ const ModernSidebar = () => {
         { icon: '📊', label: 'Dashboard', path: '/admin-dashboard' },
         { icon: '👥', label: 'Users', path: '/admin-users' },
         { icon: '🎮', label: 'Games', path: '/admin-games' },
+        { icon: '🤖', label: 'Forest Guardian AI', path: '/ai-chat' },
         { icon: '⚙️', label: 'Settings', path: '/admin-settings' },
       ];
     }
