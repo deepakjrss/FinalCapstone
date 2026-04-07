@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import api from '../utils/api';
 
 export default function Leaderboard() {
   const { token, user } = useAuth();
@@ -8,6 +10,7 @@ export default function Leaderboard() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [type, setType] = useState('class'); // 'class' or 'school'
 
   // Protect route - only students and teachers
   useEffect(() => {
@@ -17,47 +20,39 @@ export default function Leaderboard() {
   }, [user, navigate]);
 
   // Fetch leaderboard data
-  useEffect(() => {
-    const fetchLeaderboard = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const fetchLeaderboard = useCallback(async (leaderboardType) => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        console.log('Fetching leaderboard with token:', token ? 'Present' : 'Missing');
+      const response = await api.get(`/leaderboard?type=${leaderboardType}`);
 
-        const response = await fetch(
-          'http://localhost:5000/api/leaderboard',
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-
-        console.log('Response status:', response.status);
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          const errorMsg = errorData.message || `Server error (${response.status})`;
-          throw new Error(errorMsg);
-        }
-
-        const data = await response.json();
-        console.log('Leaderboard data received:', data);
-        setLeaderboard(data.leaderboard || []);
-      } catch (err) {
-        setError(err.message);
-        console.error('Error fetching leaderboard:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (token) {
-      fetchLeaderboard();
+      const data = response.data;
+      setLeaderboard(data.leaderboard || []);
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to load leaderboard');
+      console.error('Error fetching leaderboard:', err);
+    } finally {
+      setLoading(false);
     }
-  }, [token]);
+  }, []);
+
+  useEffect(() => {
+    if (token) {
+      fetchLeaderboard(type);
+    }
+  }, [token, type, fetchLeaderboard]);
+
+  // Auto refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (token) {
+        fetchLeaderboard(type);
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [token, type, fetchLeaderboard]);
 
   // Get medal emoji for top 3
   const getMedalEmoji = (rank) => {
@@ -73,216 +68,242 @@ export default function Leaderboard() {
     }
   };
 
-  // Get forest state color and styling
-  const getForestStateStyle = (state) => {
-    switch (state) {
-      case 'healthy':
-        return {
-          bg: 'bg-green-100',
-          text: 'text-green-800',
-          badge: 'bg-green-200',
-          emoji: '🌳'
-        };
-      case 'growing':
-        return {
-          bg: 'bg-emerald-100',
-          text: 'text-emerald-800',
-          badge: 'bg-emerald-200',
-          emoji: '🌱'
-        };
-      case 'polluted':
-        return {
-          bg: 'bg-gray-100',
-          text: 'text-gray-800',
-          badge: 'bg-gray-200',
-          emoji: '🌍'
-        };
+  // Get avatar initial
+  const getAvatarInitial = (name) => {
+    return name ? name.charAt(0).toUpperCase() : '?';
+  };
+
+  // Get gradient style for top 3
+  const getGradientStyle = (rank) => {
+    switch (rank) {
+      case 1:
+        return 'from-yellow-400 via-yellow-500 to-yellow-600';
+      case 2:
+        return 'from-gray-300 via-gray-400 to-gray-500';
+      case 3:
+        return 'from-orange-400 via-orange-500 to-orange-600';
       default:
-        return {
-          bg: 'bg-gray-100',
-          text: 'text-gray-800',
-          badge: 'bg-gray-200',
-          emoji: '🌍'
-        };
+        return 'from-green-50 to-green-100';
     }
   };
 
-  // Get medal color styling for top 3
-  const getMedalStyle = (rank) => {
-    switch (rank) {
-      case 1:
-        return 'bg-gradient-to-br from-yellow-300 to-yellow-500 text-yellow-900';
-      case 2:
-        return 'bg-gradient-to-br from-gray-300 to-gray-400 text-gray-900';
-      case 3:
-        return 'bg-gradient-to-br from-orange-300 to-orange-500 text-orange-900';
-      default:
-        return 'bg-gradient-to-br from-green-50 to-green-100 text-green-800';
-    }
+  // Check if current user
+  const isCurrentUser = (name) => {
+    return user && user.name === name;
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 pt-20 pb-12">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header Section */}
-        <div className="mb-12 text-center">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mb-12 text-center"
+        >
           <div className="flex items-center justify-center gap-3 mb-4">
             <span className="text-5xl">🏆</span>
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-              Class Leaderboard
+              Leaderboard
             </h1>
             <span className="text-5xl">🏆</span>
           </div>
           <p className="text-gray-600 text-lg mt-2">
-            See how your class is performing in the eco-challenge! 🌍
+            Compete with your peers and climb the ranks! 🌍
           </p>
-        </div>
+        </motion.div>
+
+        {/* Toggle Buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="flex justify-center mb-8"
+        >
+          <div className="bg-white rounded-xl p-1 shadow-lg border border-gray-200">
+            <button
+              onClick={() => setType('class')}
+              className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
+                type === 'class'
+                  ? 'bg-green-600 text-white shadow-md'
+                  : 'text-gray-600 hover:text-green-600'
+              }`}
+            >
+              Class Leaderboard
+            </button>
+            <button
+              onClick={() => setType('school')}
+              className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
+                type === 'school'
+                  ? 'bg-green-600 text-white shadow-md'
+                  : 'text-gray-600 hover:text-green-600'
+              }`}
+            >
+              School Leaderboard
+            </button>
+          </div>
+        </motion.div>
 
         {/* Loading State */}
         {loading && (
-          <div className="flex flex-col items-center justify-center py-20">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex flex-col items-center justify-center py-20"
+          >
             <div className="relative w-16 h-16 mb-6">
               <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full animate-spin" />
               <div className="absolute inset-2 bg-white rounded-full" />
             </div>
             <p className="text-gray-600 text-lg font-medium">Loading leaderboard...</p>
-          </div>
+          </motion.div>
         )}
 
         {/* Error State */}
         {error && !loading && (
-          <div className="bg-red-50 border-2 border-red-200 rounded-xl p-8 text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-red-50 border-2 border-red-200 rounded-xl p-8 text-center"
+          >
             <span className="text-4xl mb-4 block">❌</span>
             <h3 className="text-xl font-bold text-red-800 mb-2">Oops! Something went wrong</h3>
             <p className="text-red-600 mb-6">{error}</p>
             <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-300 font-semibold"
+              onClick={() => fetchLeaderboard(type)}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl shadow-md transition"
             >
               Try Again
             </button>
-          </div>
+          </motion.div>
         )}
 
         {/* Empty State */}
         {!loading && !error && leaderboard.length === 0 && (
-          <div className="bg-white rounded-2xl shadow-lg p-12 text-center border border-gray-100">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl shadow-lg p-12 text-center border border-gray-100"
+          >
             <span className="text-5xl mb-4 block">📊</span>
-            <h3 className="text-2xl font-bold text-gray-800 mb-2">No Classes Yet</h3>
+            <h3 className="text-2xl font-bold text-gray-800 mb-2">No leaderboard data available</h3>
             <p className="text-gray-600">
-              Classes will appear here once they complete eco-activities.
+              Students will appear here once they start earning ecoPoints.
             </p>
-          </div>
+          </motion.div>
         )}
 
         {/* Leaderboard Cards */}
         {!loading && !error && leaderboard.length > 0 && (
-          <div className="space-y-4">
-            {leaderboard.map((entry, index) => {
-              const stateStyle = getForestStateStyle(entry.forestState);
-              const medal = getMedalEmoji(entry.rank);
-              const medalStyle = getMedalStyle(entry.rank);
-              const isTopThree = entry.rank <= 3;
+          <AnimatePresence>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="space-y-4"
+            >
+              {leaderboard.map((entry, index) => {
+                const medal = getMedalEmoji(entry.rank);
+                const gradient = getGradientStyle(entry.rank);
+                const isTopThree = entry.rank <= 3;
+                const currentUser = isCurrentUser(entry.name);
 
-              return (
-                <div
-                  key={entry.className}
-                  className={`
-                    transform transition-all duration-300 hover:scale-102 hover:shadow-xl
-                    rounded-xl border-2 overflow-hidden cursor-pointer group
-                    ${
-                      isTopThree
-                        ? `${medalStyle} border-yellow-200 shadow-lg`
-                        : 'bg-white border-gray-200 shadow-md hover:border-green-300'
-                    }
-                  `}
-                >
-                  {/* Card Content */}
-                  <div className="p-6 flex items-center justify-between">
-                    {/* Left: Rank and Class Info */}
-                    <div className="flex items-center gap-6 flex-1">
-                      {/* Rank Circle */}
-                      <div
-                        className={`
-                          flex-shrink-0 w-14 h-14 rounded-full flex items-center justify-center
-                          font-bold text-lg transition-transform duration-300 group-hover:scale-110
-                          ${medalStyle} ${isTopThree ? 'shadow-lg' : 'bg-gray-100 text-gray-800'}
-                        `}
-                      >
-                        {medal || entry.rank}
+                return (
+                  <motion.div
+                    key={`${type}-${entry.name}-${entry.rank}`}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{
+                      duration: 0.5,
+                      delay: index * 0.1,
+                      type: "spring",
+                      stiffness: 100
+                    }}
+                    whileHover={{ scale: 1.02 }}
+                    className={`
+                      bg-white rounded-xl shadow-lg border-2 overflow-hidden group
+                      transition-all duration-300 cursor-pointer
+                      ${currentUser ? 'ring-2 ring-green-500 ring-offset-2' : ''}
+                      ${isTopThree ? `bg-gradient-to-r ${gradient} text-white border-yellow-300` : 'border-gray-200 hover:border-green-300'}
+                    `}
+                  >
+                    <div className="p-6 flex items-center justify-between">
+                      {/* Left: Rank and Avatar */}
+                      <div className="flex items-center gap-4">
+                        {/* Rank */}
+                        <div className="flex-shrink-0">
+                          {entry.rank === 1 && (
+                            <span className="text-3xl">👑</span>
+                          )}
+                          {medal && (
+                            <span className="text-3xl">{medal}</span>
+                          )}
+                          {!medal && !entry.rank === 1 && (
+                            <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-600">
+                              {entry.rank}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Avatar */}
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${
+                          isTopThree ? 'bg-white bg-opacity-20 text-white' : 'bg-green-100 text-green-800'
+                        }`}>
+                          {getAvatarInitial(entry.name)}
+                        </div>
+
+                        {/* Name and Badge */}
+                        <div>
+                          <h3 className={`text-xl font-bold ${
+                            isTopThree ? 'text-white' : 'text-gray-900'
+                          } ${currentUser ? 'font-extrabold' : ''}`}>
+                            {entry.name}
+                            {currentUser && <span className="ml-2 text-sm">(You)</span>}
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <p className={`text-sm ${isTopThree ? 'text-white text-opacity-80' : 'text-gray-600'}`}>
+                              Rank #{entry.rank}
+                            </p>
+                            {entry.topBadge && (
+                              <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                                isTopThree
+                                  ? 'bg-white bg-opacity-20 text-white'
+                                  : 'bg-green-100 text-green-800'
+                              }`}>
+                                <span>{entry.topBadge.icon}</span>
+                                <span>{entry.topBadge.name}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Class Info */}
-                      <div className="flex-1">
-                        <h3 className="text-xl font-bold text-gray-900 via-current transition-colors">
-                          {entry.className}
-                        </h3>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {entry.rank === 1 && '🎯 Eco Champions!'}
-                          {entry.rank === 2 && '🌟 Strong Performers'}
-                          {entry.rank === 3 && '⭐ Rising Stars'}
-                          {entry.rank > 3 && `#${entry.rank} in rankings`}
+                      {/* Right: EcoPoints */}
+                      <div className="text-right">
+                        <p className={`text-sm font-medium ${
+                          isTopThree ? 'text-white text-opacity-80' : 'text-gray-600'
+                        } mb-1`}>
+                          EcoPoints
+                        </p>
+                        <p className={`text-3xl font-bold ${
+                          isTopThree ? 'text-white' : 'bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent'
+                        }`}>
+                          {entry.ecoPoints}
                         </p>
                       </div>
                     </div>
 
-                    {/* Center: Eco Score */}
-                    <div className="flex-shrink-0 mx-6 text-center">
-                      <p className="text-sm font-medium text-gray-600 mb-1">Eco Score</p>
-                      <p className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                        {entry.ecoScore}
-                      </p>
-                    </div>
-
-                    {/* Right: Forest State Badge */}
-                    <div className="flex-shrink-0">
-                      <div
-                        className={`
-                          px-4 py-2 rounded-full font-semibold flex items-center gap-2
-                          transition-all duration-300 group-hover:scale-105
-                          ${stateStyle.bg} ${stateStyle.text}
-                        `}
-                      >
-                        <span className="text-lg">{stateStyle.emoji}</span>
-                        <span className="capitalize text-sm">{entry.forestState}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Top 3 Highlight */}
-                  {isTopThree && (
-                    <div className="h-1 bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-300" />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Stats Footer */}
-        {!loading && !error && leaderboard.length > 0 && (
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Total Classes */}
-            <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200 text-center hover:shadow-lg transition-shadow">
-              <p className="text-gray-600 text-sm font-medium mb-2">Total Classes</p>
-              <p className="text-4xl font-bold text-green-600">{leaderboard.length}</p>
-            </div>
-
-            {/* Top Class */}
-            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl shadow-md p-6 border-2 border-yellow-200 text-center">
-              <p className="text-gray-600 text-sm font-medium mb-2">🥇 Top Class</p>
-              <p className="text-2xl font-bold text-yellow-800">{leaderboard[0]?.className}</p>
-              <p className="text-sm text-yellow-700 mt-1">{leaderboard[0]?.ecoScore} points</p>
-            </div>
-
-            {/* Healthy Forests */}
-            <div className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-xl shadow-md p-6 border-2 border-green-200 text-center">
-              <p className="text-gray-600 text-sm font-medium mb-2">🌳 Healthy Forests</p>
-              <p className="text-4xl font-bold text-green-600">
-                {leaderboard.filter((e) => e.forestState === 'healthy').length}
-              </p>
-            </div>
-          </div>
+                    {/* Top 3 Highlight */}
+                    {isTopThree && (
+                      <div className="h-1 bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-300" />
+                    )}
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+          </AnimatePresence>
         )}
       </div>
     </div>

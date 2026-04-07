@@ -2,15 +2,24 @@ const Game = require('../models/Game');
 const Attempt = require('../models/Attempt');
 const User = require('../models/User');
 const Forest = require('../models/Forest');
+const EcoLog = require('../models/EcoLog');
 const { checkAndAwardBadges } = require('./badgeController');
+const { cacheUtils, CACHE_KEYS } = require('../utils/cache');
+const { validationResult } = require('express-validator');
 
-// OpenAI client for quiz generation
-const OpenAI = require('openai');
+// OpenAI client for quiz generation (lazy-loaded)
+let openai = null;
 
-if (!process.env.OPENAI_API_KEY) {
-  console.warn('Warning: OPENAI_API_KEY not set. /api/games/generate-quiz will fail without it.');
-}
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const getOpenAIClient = () => {
+  if (!openai) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY is not configured');
+    }
+    const OpenAI = require('openai');
+    openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+  return openai;
+};
 
 /**
  * Get all available games
@@ -18,10 +27,25 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
  * Access: Student only (protected)
  */
 exports.getAvailableGames = async (req, res) => {
+  console.log('🎮 GAMES API CALLED!');
   try {
+    console.log(`🎮 getAvailableGames called for user: ${req.user._id}, school: ${req.user.school}`);
+
+    // Try without any filters first
+    const allGames = await Game.find({})
+      .select('title isActive')
+      .sort({ createdAt: -1 });
+
+    console.log(`🎮 Total games in DB: ${allGames.length}`);
+    allGames.forEach(g => console.log(`  - ${g.title}: isActive=${g.isActive}`));
+
+    // Then filter for active games
     const games = await Game.find({ isActive: true })
       .select('-questions') // Don't send answers yet
       .sort({ createdAt: -1 });
+
+    console.log(`🎮 Active games found: ${games.length}`);
+    games.forEach(g => console.log(`  - ${g.title} (${g._id})`));
 
     res.status(200).json({
       success: true,
@@ -103,6 +127,15 @@ exports.getGameById = async (req, res) => {
  */
 exports.submitGameAttempt = async (req, res) => {
   try {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+
     const { gameId, answers } = req.body;
 
     // Validation
@@ -168,7 +201,7 @@ exports.submitGameAttempt = async (req, res) => {
     const passed = scorePercentage >= game.minPassScore;
 
     // Get student
-    const student = await User.findById(req.user._id);
+    const student = await User.findById(req.user._id).select('role ecoPoints gamesPlayed _id name');
 
     if (!student) {
       return res.status(401).json({
@@ -192,7 +225,8 @@ exports.submitGameAttempt = async (req, res) => {
       score: scorePercentage,
       pointsEarned,
       passed,
-      completedAt: new Date()
+      completedAt: new Date(),
+      school: req.user.school
     });
 
     await attempt.save();
@@ -203,13 +237,38 @@ exports.submitGameAttempt = async (req, res) => {
     student.gamesPlayed = (student.gamesPlayed || 0) + 1;
     await student.save();
 
+    // Log eco activity for trend analytics
+    await EcoLog.create({
+      user: student._id,
+      school: req.user.school,
+      className: student.className || null,
+      points: pointsEarned,
+      type: 'game',
+      description: `Game completed: ${game.title}`,
+      date: attempt.completedAt
+    });
+
     // Check and award badges
     const newlyEarnedBadges = await checkAndAwardBadges(student._id);
 
     // Update forest for student's class
-    let forest = await Forest.getOrCreate(student.className);
+    let forest = await Forest.getOrCreate(student.className, req.user.school);
     forest.ecoScore += pointsEarned;
     await forest.save(); // Pre-save hook will update forestState
+
+    // Invalidate analytics caches since data has changed
+    cacheUtils.invalidateAnalytics();
+    cacheUtils.invalidateClass(student.className);
+
+    // Emit real-time analytics update to admin users
+    const io = req.app.get('io');
+    io.emit('analytics-update', {
+      type: 'game_attempt',
+      studentId: student._id,
+      className: student.className,
+      pointsEarned,
+      timestamp: new Date()
+    });
 
     // Populate attempt data for response
     await attempt.populate('game', 'title maxPoints minPassScore');
@@ -268,7 +327,7 @@ exports.generateQuiz = async (req, res) => {
       "Respond with a valid JSON object that has a 'questions' array using the following structure:\n" +
       "{questions:[{questionText:'...',options:['','', '',''],correctAnswer:0}, ...]}";
 
-    const aiResponse = await openai.chat.completions.create({
+    const aiResponse = await getOpenAIClient().chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [{ role: 'system', content: systemPrompt }],
       max_tokens: 500,
@@ -357,7 +416,7 @@ exports.getStudentAttempts = async (req, res) => {
     const studentId = req.user._id;
     const { gameId } = req.query;
 
-    let filter = { student: studentId };
+    let filter = { student: studentId, school: req.user.school };
     if (gameId) {
       filter.game = gameId;
     }

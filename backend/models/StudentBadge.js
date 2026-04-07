@@ -17,6 +17,11 @@ const studentBadgeSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
       required: true
+    },
+    school: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "School",
+      default: null
     }
   },
   {

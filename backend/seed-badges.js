@@ -11,55 +11,45 @@ const seedBadges = async () => {
     await connectDB();
     console.log('📚 Connected to MongoDB for badge seeding...');
 
-    // Check if badges already exist
-    const existingBadges = await Badge.countDocuments();
-    if (existingBadges > 0) {
-      console.log('✅ Badges already exist in database. Skipping seed.');
-      process.exit(0);
-    }
+    // Clear existing badges to force update
+    await Badge.deleteMany({});
+    console.log('🗑️ Cleared existing badges for fresh seeding...');
 
     const badges = [
       {
-        name: 'Eco Starter',
-        description: 'Earned your first 100 eco-points! Great start on your eco-journey.',
+        name: 'Beginner Saver',
+        description: 'Earned 50 eco-points! You\'re taking your first steps towards a greener future.',
         icon: '🌱',
         conditionType: 'ecoPoints',
-        threshold: 100
+        threshold: 50
       },
       {
-        name: 'Tree Protector',
-        description: 'Accumulated 300 eco-points! You\'re making a real difference.',
+        name: 'Eco Warrior',
+        description: 'Reached 200 eco-points! You\'re fighting for the environment like a true warrior.',
+        icon: '🌿',
+        conditionType: 'ecoPoints',
+        threshold: 200
+      },
+      {
+        name: 'Tree Guardian',
+        description: 'Accumulated 500 eco-points! You\'re protecting our planet\'s precious trees.',
         icon: '🌳',
         conditionType: 'ecoPoints',
-        threshold: 300
+        threshold: 500
       },
       {
-        name: 'Climate Champion',
-        description: 'Reached 600 eco-points! You\'re a true environmental champion.',
-        icon: '🌍',
-        conditionType: 'ecoPoints',
-        threshold: 600
-      },
-      {
-        name: 'Quiz Master',
-        description: 'Completed 5 games! You\'re a knowledge superstar.',
+        name: 'Earth Hero',
+        description: 'Achieved 1000 eco-points! You\'re a legendary hero saving our planet.',
         icon: '🏆',
-        conditionType: 'gamesPlayed',
-        threshold: 5
-      },
-      {
-        name: 'Forest Guardian',
-        description: 'Earned 1000 eco-points! You\'re preserving the planet.',
-        icon: '🌲',
         conditionType: 'ecoPoints',
         threshold: 1000
       },
       {
-        name: 'Game Legend',
-        description: 'Completed 10 games! You\'re unstoppable.',
-        icon: '⭐',
-        conditionType: 'gamesPlayed',
-        threshold: 10
+        name: 'Streak Master',
+        description: 'Maintained a 7-day streak! Consistency is key to environmental change.',
+        icon: '🔥',
+        conditionType: 'streak',
+        threshold: 7
       }
     ];
 

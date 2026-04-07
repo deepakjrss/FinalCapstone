@@ -32,13 +32,38 @@ export default function Navbar() {
     setMobileMenuOpen(false);
   };
 
-  // Nav links for authenticated users
-  const authNavLinks = [
-    { label: 'Dashboard', path: '/student-dashboard', icon: '📊' },
-    { label: 'Games', path: '/games', icon: '🎮' },
-    { label: 'Leaderboard', path: '/leaderboard', icon: '🏆' },
-    { label: 'Achievements', path: '/achievements', icon: '🏅' },
-  ];
+  // Nav links based on user role
+  const getAuthNavLinks = () => {
+    if (!user) return [];
+
+    if (user.role === 'student') {
+      return [
+        { label: 'Dashboard', path: '/student-dashboard', icon: '📊' },
+        { label: 'Games', path: '/games', icon: '🎮' },
+        { label: 'Leaderboard', path: '/leaderboard', icon: '🏆' },
+        { label: 'Achievements', path: '/achievements', icon: '🏅' },
+      ];
+    } else if (user.role === 'teacher') {
+      return [
+        { label: 'Dashboard', path: '/teacher-dashboard', icon: '📊' },
+        { label: 'Leaderboard', path: '/leaderboard', icon: '🏆' },
+        { label: 'Task Review', path: '/task-review', icon: '✅' },
+      ];
+    } else if (user.role === 'admin') {
+      return [
+        { label: 'Dashboard', path: '/admin-dashboard', icon: '📊' },
+        { label: 'AI Chat', path: '/ai-chat', icon: '🤖' },
+      ];
+    } else if (user.role === 'superadmin') {
+      return [
+        { label: 'Super Admin Panel', path: '/superadmin-dashboard', icon: '👑' },
+        { label: 'AI Chat', path: '/ai-chat', icon: '🤖' },
+      ];
+    }
+    return [];
+  };
+
+  const authNavLinks = getAuthNavLinks();
 
   const isActive = (path) => location.pathname === path;
 

@@ -14,7 +14,7 @@ exports.getForestByClass = async (req, res) => {
     }
 
     // Get or create forest if it doesn't exist
-    const forest = await Forest.getOrCreate(className);
+    const forest = await Forest.getOrCreate(className, req.user.school);
 
     res.status(200).json({
       success: true,
@@ -53,7 +53,7 @@ exports.updateForestScore = async (req, res) => {
     }
 
     // Get or create forest
-    let forest = await Forest.getOrCreate(className);
+    let forest = await Forest.getOrCreate(className, req.user.school);
 
     // Add points (this triggers pre-save hook to recalculate forestState)
     forest = await forest.addPoints(points);

@@ -1,4 +1,5 @@
 const express = require('express');
+const { body } = require('express-validator');
 const router = express.Router();
 const { verifyToken, authorizeRoles } = require('../middleware/auth');
 const {
@@ -77,6 +78,17 @@ router.post(
   '/submit',
   verifyToken,
   authorizeRoles('student'),
+  [
+    body('gameId')
+      .isMongoId()
+      .withMessage('Invalid game ID'),
+    body('answers')
+      .isArray({ min: 1 })
+      .withMessage('Answers must be a non-empty array'),
+    body('answers.*')
+      .isInt({ min: 0 })
+      .withMessage('Each answer must be a non-negative integer')
+  ],
   submitGameAttempt
 );
 

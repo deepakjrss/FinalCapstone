@@ -12,7 +12,8 @@ const forestSchema = new mongoose.Schema(
     ecoScore: {
       type: Number,
       default: 0,
-      min: [0, 'Eco score cannot be negative']
+      min: [0, 'Eco score cannot be negative'],
+      index: true // Add index for sorting queries
     },
     forestState: {
       type: String,
@@ -22,6 +23,11 @@ const forestSchema = new mongoose.Schema(
     lastUpdated: {
       type: Date,
       default: Date.now
+    },
+    school: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "School",
+      required: true
     }
   },
   {
@@ -43,14 +49,15 @@ forestSchema.pre('save', function(next) {
 });
 
 // Static method to get or create forest by className
-forestSchema.statics.getOrCreate = async function(className) {
+forestSchema.statics.getOrCreate = async function(className, schoolId) {
   try {
-    let forest = await this.findOne({ className: className.toUpperCase() });
+    let forest = await this.findOne({ className: className.toUpperCase(), school: schoolId });
     if (!forest) {
       forest = await this.create({
         className: className.toUpperCase(),
         ecoScore: 0,
-        forestState: 'polluted'
+        forestState: 'polluted',
+        school: schoolId
       });
     }
     return forest;

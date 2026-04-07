@@ -20,7 +20,7 @@ const badgeSchema = new mongoose.Schema(
     },
     conditionType: {
       type: String,
-      enum: ['ecoPoints', 'gamesPlayed'],
+      enum: ['ecoPoints', 'gamesPlayed', 'streak'],
       required: [true, 'Condition type is required']
     },
     threshold: {

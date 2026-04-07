@@ -18,6 +18,7 @@ const GamePlay = () => {
   // `user` not required in this component
 
   const [game, setGame] = useState(null);
+  const [quizQuestions, setQuizQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [error, setError] = useState('');
@@ -26,21 +27,37 @@ const GamePlay = () => {
   const [result, setResult] = useState(null);
   const [showResult, setShowResult] = useState(false);
 
-  // Load game on mount
+  // Load game metadata and AI-generated quiz on mount
   useEffect(() => {
     const loadGame = async () => {
       setLoading(true);
       setError('');
       try {
-        const gameResult = await gameService.getGameById(gameId);
+        const [gameResult, quizResult] = await Promise.all([
+          gameService.getGameById(gameId),
+          gameService.generateQuiz()
+        ]);
+
         if (gameResult.success) {
           setGame(gameResult.data);
-          setAnswers(new Array(gameResult.data.questions.length).fill(-1));
         } else {
           setError(gameResult.error || 'Failed to load game');
         }
+
+        if (quizResult.success) {
+          setQuizQuestions(quizResult.data.questions);
+        } else {
+          setError(prev => prev || quizResult.error || 'Failed to generate quiz');
+        }
+
+        const qlen =
+          (quizResult.success && quizResult.data.questions.length) ||
+          (gameResult.success && gameResult.data.questions.length) ||
+          0;
+        setAnswers(new Array(qlen).fill(-1));
       } catch (err) {
-        setError('Error loading game');
+        console.error(err);
+        setError('Error loading game or quiz');
       } finally {
         setLoading(false);
       }
@@ -56,7 +73,8 @@ const GamePlay = () => {
   };
 
   const handleNextQuestion = () => {
-    if (currentQuestion < game.questions.length - 1) {
+    const total = (quizQuestions.length || game?.questions?.length || 0);
+    if (currentQuestion < total - 1) {
       setCurrentQuestion(currentQuestion + 1);
     }
   };
@@ -77,7 +95,12 @@ const GamePlay = () => {
     setLoadingSubmit(true);
     setError('');
     try {
-      const submitResult = await gameService.submitGameAttempt(gameId, answers);
+      const questionsPayload = quizQuestions.length ? quizQuestions : null;
+      const submitResult = await gameService.submitGameAttempt(
+        gameId,
+        answers,
+        questionsPayload
+      );
       if (submitResult.success) {
         setResult(submitResult.data);
         setShowResult(true);
@@ -95,7 +118,7 @@ const GamePlay = () => {
     navigate('/student-dashboard');
   };
 
-  // Loading State
+  // Loading State (game metadata or quiz)
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -273,11 +296,12 @@ const GamePlay = () => {
     );
   }
 
-  // Quiz Screen
-  if (game && game.questions && game.questions.length > 0) {
-    const question = game.questions[currentQuestion];
+  // Quiz Screen (uses dynamic questions if available)
+  const questions = quizQuestions.length ? quizQuestions : game?.questions || [];
+  if (questions.length > 0) {
+    const question = questions[currentQuestion];
     const answeredCount = answers.filter(a => a !== -1).length;
-    const isLastQuestion = currentQuestion === game.questions.length - 1;
+    const isLastQuestion = currentQuestion === questions.length - 1;
     const allAnswered = !answers.includes(-1);
 
     return (
@@ -291,9 +315,9 @@ const GamePlay = () => {
               <div className="p-6 max-w-7xl mx-auto">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h1 className="text-2xl font-bold">{game.title}</h1>
+                    <h1 className="text-2xl font-bold">{game?.title || 'Environmental Quiz'}</h1>
                     <p className="text-green-100 text-sm mt-1">
-                      Question {currentQuestion + 1} of {game.questions.length}
+                      Question {currentQuestion + 1} of {questions.length}
                     </p>
                   </div>
                   <ModernButton
@@ -309,7 +333,7 @@ const GamePlay = () => {
                 <div className="w-full bg-green-700/40 rounded-full h-2">
                   <div
                     className="bg-white h-2 rounded-full transition-all duration-300 shadow"
-                    style={{ width: `${((currentQuestion + 1) / game.questions.length) * 100}%` }}
+                    style={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}
                   />
                 </div>
               </div>
@@ -365,7 +389,7 @@ const GamePlay = () => {
                 <div className="bg-gray-50 p-8 border-t border-gray-200">
                   <div className="flex items-center justify-between mb-6">
                     <div className="text-sm font-semibold text-gray-800">
-                      Answered: <span className="text-green-600 font-bold">{answeredCount}/{game.questions.length}</span>
+                      Answered: <span className="text-green-600 font-bold">{answeredCount}/{questions.length}</span>
                     </div>
                     <div className="text-sm font-semibold text-gray-800">
                       Max Points: <span className="text-purple-600 font-bold">{game.maxPoints}</span>
@@ -411,7 +435,7 @@ const GamePlay = () => {
               <div className="mt-8 bg-white rounded-lg p-6 shadow-sm border border-gray-200">
                 <p className="text-sm font-semibold text-gray-900 mb-4">Question Progress</p>
                 <div className="flex flex-wrap gap-2">
-                  {game.questions.map((_, index) => (
+                  {questions.map((_, index) => (
                     <button
                       key={index}
                       onClick={() => setCurrentQuestion(index)}

@@ -1,43 +1,105 @@
 const Forest = require('../models/Forest');
+const User = require('../models/User');
+const StudentBadge = require('../models/StudentBadge');
+const Badge = require('../models/Badge');
 
 /**
- * Get class vs class leaderboard
- * GET /api/leaderboard
+ * Get leaderboard - class vs class or individual student leaderboard
+ * GET /api/leaderboard?type=class|school
  * Access: Student, Teacher (protected)
  * 
- * Returns ranked list of classes sorted by ecoScore
+ * If type=class: Top 10 students in same class by ecoPoints
+ * If type=school: Top 10 students in same school by ecoPoints
+ * Else: Class vs class leaderboard
  */
 exports.getLeaderboard = async (req, res) => {
   try {
-    // Fetch all forests sorted by ecoScore in descending order
-    const forests = await Forest.find()
-      .sort({ ecoScore: -1 })
-      .lean(); // Use lean() for better performance
+    const { type } = req.query;
 
-    if (!forests || forests.length === 0) {
-      return res.status(200).json({
+    if (type === 'class' || type === 'school') {
+      // Individual student leaderboard
+      let filter = {
+        role: 'student',
+        status: 'approved'
+      };
+
+      if (type === 'class') {
+        filter.class = req.user.class;
+      } else if (type === 'school') {
+        filter.school = req.user.school;
+      }
+
+      const users = await User.find(filter)
+        .sort({ ecoPoints: -1 })
+        .limit(10)
+        .select('name ecoPoints _id')
+        .lean();
+
+      if (!users || users.length === 0) {
+        return res.status(200).json({
+          success: true,
+          leaderboard: [],
+          type,
+          message: 'No leaderboard data available'
+        });
+      }
+
+      // Get top badge for each user
+      const leaderboard = await Promise.all(users.map(async (user, index) => {
+        const topBadge = await StudentBadge.findOne({ student: user._id })
+          .populate('badge', 'name icon')
+          .sort({ earnedAt: -1 })
+          .lean();
+
+        return {
+          rank: index + 1,
+          name: user.name,
+          ecoPoints: user.ecoPoints,
+          topBadge: topBadge ? {
+            name: topBadge.badge.name,
+            icon: topBadge.badge.icon
+          } : null
+        };
+      }));
+
+      res.status(200).json({
         success: true,
-        leaderboard: [],
-        message: 'No forest data available yet'
+        leaderboard,
+        type,
+        totalStudents: leaderboard.length,
+        message: `${type.charAt(0).toUpperCase() + type.slice(1)} leaderboard retrieved successfully`
+      });
+    } else {
+      // Class vs class leaderboard (existing logic)
+      const forests = await Forest.find({ school: req.user.school })
+        .sort({ ecoScore: -1 })
+        .lean();
+
+      if (!forests || forests.length === 0) {
+        return res.status(200).json({
+          success: true,
+          leaderboard: [],
+          message: 'No forest data available yet'
+        });
+      }
+
+      // Add rank number dynamically
+      const leaderboard = forests.map((forest, index) => ({
+        rank: index + 1,
+        className: forest.className,
+        ecoScore: forest.ecoScore,
+        forestState: forest.forestState,
+        lastUpdated: forest.lastUpdated
+      }));
+
+      res.status(200).json({
+        success: true,
+        leaderboard,
+        totalClasses: leaderboard.length,
+        topClass: leaderboard[0] || null,
+        message: 'Class leaderboard retrieved successfully'
       });
     }
-
-    // Add rank number dynamically
-    const leaderboard = forests.map((forest, index) => ({
-      rank: index + 1,
-      className: forest.className,
-      ecoScore: forest.ecoScore,
-      forestState: forest.forestState,
-      lastUpdated: forest.lastUpdated
-    }));
-
-    res.status(200).json({
-      success: true,
-      leaderboard,
-      totalClasses: leaderboard.length,
-      topClass: leaderboard[0] || null,
-      message: 'Leaderboard retrieved successfully'
-    });
   } catch (error) {
     console.error('Error fetching leaderboard:', error);
     res.status(500).json({
@@ -69,7 +131,7 @@ exports.getLeaderboardByState = async (req, res) => {
     }
 
     // Fetch forests filtered by state, sorted by ecoScore
-    const forests = await Forest.find({ forestState: state.toLowerCase() })
+    const forests = await Forest.find({ forestState: state.toLowerCase(), school: req.user.school })
       .sort({ ecoScore: -1 })
       .lean();
 
@@ -129,7 +191,7 @@ exports.getTopClasses = async (req, res) => {
     }
 
     // Fetch top N forests
-    const forests = await Forest.find()
+    const forests = await Forest.find({ school: req.user.school })
       .sort({ ecoScore: -1 })
       .limit(limitNum)
       .lean();
@@ -200,7 +262,7 @@ exports.getClassRank = async (req, res) => {
     }
 
     // Get all forests to find rank
-    const allForests = await Forest.find()
+    const allForests = await Forest.find({ school: req.user.school })
       .sort({ ecoScore: -1 })
       .lean();
 

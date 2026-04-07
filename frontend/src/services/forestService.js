@@ -1,23 +1,4 @@
-import axios from 'axios';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-
-// Create axios instance with base config
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add token to requests
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+import api from '../utils/api';
 
 // Forest Service
 const forestService = {
@@ -28,7 +9,7 @@ const forestService = {
    */
   getForestByClass: async (className) => {
     try {
-      const response = await apiClient.get(`/forest/${className}`);
+      const response = await api.get(`/forest/${className}`);
       return {
         success: true,
         data: response.data.forest,
@@ -47,7 +28,7 @@ const forestService = {
    */
   getAllForests: async () => {
     try {
-      const response = await apiClient.get('/forest');
+      const response = await api.get('/forest');
       return {
         success: true,
         data: response.data.forests,
@@ -68,7 +49,7 @@ const forestService = {
    */
   updateForestScore: async (className, points) => {
     try {
-      const response = await apiClient.put('/forest/update', {
+      const response = await api.put('/forest/update', {
         className,
         points,
       });
@@ -90,7 +71,7 @@ const forestService = {
    */
   getForestStats: async () => {
     try {
-      const response = await apiClient.get('/forest/stats/summary');
+      const response = await api.get('/forest/stats/summary');
       return {
         success: true,
         data: response.data.stats,

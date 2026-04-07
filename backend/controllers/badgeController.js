@@ -1,6 +1,33 @@
 const Badge = require('../models/Badge');
 const StudentBadge = require('../models/StudentBadge');
 const User = require('../models/User');
+const { createBadgeNotification } = require('./notificationController');
+
+const calculateBadgeProgress = (student, badge) => {
+  if (badge.threshold == null) {
+    return { progress: 0, qualified: false };
+  }
+
+  let progress = 0;
+  let qualified = false;
+  const threshold = badge.threshold;
+
+  if (badge.conditionType === 'ecoPoints') {
+    const ecoPoints = student.ecoPoints || 0;
+    progress = Math.min((ecoPoints / threshold) * 100, 100);
+    qualified = ecoPoints >= threshold;
+  } else if (badge.conditionType === 'gamesPlayed') {
+    const gamesPlayed = student.gamesPlayed || 0;
+    progress = Math.min((gamesPlayed / threshold) * 100, 100);
+    qualified = gamesPlayed >= threshold;
+  } else if (badge.conditionType === 'streak') {
+    const streak = student.streak || 0;
+    progress = Math.min((streak / threshold) * 100, 100);
+    qualified = streak >= threshold;
+  }
+
+  return { progress: Math.round(progress), qualified };
+};
 
 /**
  * Get all badges earned by logged-in student
@@ -12,7 +39,7 @@ exports.getMyBadges = async (req, res) => {
     const studentId = req.user._id;
 
     // Get all StudentBadge records for this student, populate badge info
-    const studentBadges = await StudentBadge.find({ student: studentId })
+    const studentBadges = await StudentBadge.find({ student: studentId, school: req.user.school })
       .populate('badge', 'name description icon conditionType threshold')
       .sort({ earnedAt: -1 });
 
@@ -52,7 +79,7 @@ exports.getMyBadges = async (req, res) => {
 exports.checkAndAwardBadges = async (studentId) => {
   try {
     // Get student data
-    const student = await User.findById(studentId).select('ecoPoints gamesPlayed');
+    const student = await User.findById(studentId).select('ecoPoints gamesPlayed school');
     
     if (!student) {
       console.error('Student not found for badge check:', studentId);
@@ -69,14 +96,14 @@ exports.checkAndAwardBadges = async (studentId) => {
       // Determine if student qualifies
       let qualifies = false;
 
-      if (badge.conditionType === 'ecoPoints') {
-        qualifies = student.ecoPoints >= badge.threshold;
-      } else if (badge.conditionType === 'gamesPlayed') {
-        qualifies = (student.gamesPlayed || 0) >= badge.threshold;
+      if (badge.threshold == null) {
+        continue;
       }
 
+      const { qualified } = calculateBadgeProgress(student, badge);
+
       // If qualifies, check if already earned
-      if (qualifies) {
+      if (qualified) {
         const alreadyEarned = await StudentBadge.hasEarned(studentId, badge._id);
 
         if (!alreadyEarned) {
@@ -84,7 +111,8 @@ exports.checkAndAwardBadges = async (studentId) => {
           const studentBadge = new StudentBadge({
             student: studentId,
             badge: badge._id,
-            earnedAt: new Date()
+            earnedAt: new Date(),
+            school: student.school
           });
 
           await studentBadge.save();
@@ -95,6 +123,14 @@ exports.checkAndAwardBadges = async (studentId) => {
             icon: badge.icon,
             earnedAt: studentBadge.earnedAt
           });
+          
+          // Create notification for student
+          await createBadgeNotification(
+            studentId,
+            badge.name,
+            badge._id,
+            student.school
+          );
         }
       }
     }
@@ -207,7 +243,7 @@ exports.getStudentBadgeProgress = async (req, res) => {
     const studentId = req.user._id;
 
     // Get student data
-    const student = await User.findById(studentId).select('ecoPoints gamesPlayed');
+    const student = await User.findById(studentId).select('ecoPoints gamesPlayed school');
     
     if (!student) {
       return res.status(404).json({
@@ -215,6 +251,8 @@ exports.getStudentBadgeProgress = async (req, res) => {
         message: 'Student not found'
       });
     }
+
+    console.log(`🔍 Badge progress check for student ${studentId}: ecoPoints=${student.ecoPoints}`);
 
     // Get all badges and check progress
     const allBadges = await Badge.find({ isActive: true })
@@ -224,21 +262,35 @@ exports.getStudentBadgeProgress = async (req, res) => {
 
     for (const badge of allBadges) {
       // Check if earned
-      const earned = await StudentBadge.findOne({
+      let earned = await StudentBadge.findOne({
         student: studentId,
         badge: badge._id
       });
 
-      let qualifies = false;
-      let progress = 0;
+      if (badge.threshold == null) {
+        continue;
+      }
 
-      if (badge.conditionType === 'ecoPoints') {
-        progress = Math.min((student.ecoPoints / badge.threshold) * 100, 100);
-        qualifies = student.ecoPoints >= badge.threshold;
-      } else if (badge.conditionType === 'gamesPlayed') {
-        const gamesPlayed = student.gamesPlayed || 0;
-        progress = Math.min((gamesPlayed / badge.threshold) * 100, 100);
-        qualifies = gamesPlayed >= badge.threshold;
+      const { progress, qualified } = calculateBadgeProgress(student, badge);
+
+      console.log(`  ${badge.name} (${badge.threshold} ${badge.conditionType}): qualifies=${qualified}, earned=${!!earned}, progress=${progress}%`);
+
+      // If student qualifies but doesn't have the badge, award it immediately
+      if (qualified && !earned) {
+        console.log(`  🏆 Awarding ${badge.name} to student!`);
+        try {
+          const studentBadge = new StudentBadge({
+            student: studentId,
+            badge: badge._id,
+            earnedAt: new Date(),
+            school: student.school
+          });
+          await studentBadge.save();
+          earned = studentBadge;
+          console.log(`  ✅ Successfully awarded ${badge.name}`);
+        } catch (saveError) {
+          console.error(`  ❌ Error awarding ${badge.name}:`, saveError.message);
+        }
       }
 
       badgeProgress.push({
@@ -252,12 +304,16 @@ exports.getStudentBadgeProgress = async (req, res) => {
         },
         earned: !!earned,
         earnedAt: earned ? earned.earnedAt : null,
-        progress: Math.round(progress),
-        qualified: qualifies
+        unlocked: qualified,
+        progress: progress,
+        status: qualified ? 'Completed' : 'In Progress',
+        qualified
       });
     }
 
     const earnedCount = badgeProgress.filter(bp => bp.earned).length;
+
+    console.log(`📊 Final result: ${earnedCount}/${badgeProgress.length} badges earned`);
 
     res.status(200).json({
       success: true,

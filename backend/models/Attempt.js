@@ -38,6 +38,11 @@ const attemptSchema = new mongoose.Schema(
     timeTaken: {
       type: Number,
       default: 0 // in seconds
+    },
+    school: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "School",
+      required: true
     }
   },
   {

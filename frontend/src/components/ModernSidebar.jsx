@@ -19,10 +19,13 @@ const ModernSidebar = () => {
       return [
         { icon: '📊', label: 'Dashboard', path: '/student-dashboard' },
         { icon: '🎮', label: 'Games', path: '/games' },
-        { icon: '🌲', label: 'Forest', path: '/forest' },
+        { icon: '�', label: 'Daily Tasks', path: '/daily-tasks' },
+        { icon: '�🌲', label: 'Forest', path: '/forest' },
         { icon: '🤖', label: 'Forest Guardian AI', path: '/ai-chat' },
         { icon: '🏆', label: 'Leaderboard', path: '/leaderboard' },
         { icon: '🏅', label: 'Achievements', path: '/achievements' },
+        { icon: '🎁', label: 'Reward Shop', path: '/reward-shop' },
+        { icon: '📋', label: 'Tasks', path: '/tasks' },
       ];
     } else if (user?.role === 'teacher') {
       return [
@@ -31,6 +34,7 @@ const ModernSidebar = () => {
         { icon: '📈', label: 'Analytics', path: '/teacher-analytics' },
         { icon: '🤖', label: 'Forest Guardian AI', path: '/ai-chat' },
         { icon: '🏆', label: 'Leaderboard', path: '/leaderboard' },
+        { icon: '✅', label: 'Review Tasks', path: '/task-review' },
       ];
     } else if (user?.role === 'admin') {
       return [

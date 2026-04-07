@@ -14,6 +14,7 @@ const userSchema = new mongoose.Schema(
       required: [true, 'Please provide an email'],
       unique: true,
       lowercase: true,
+      index: true, // Add index for faster email lookups
       match: [
         /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
         'Please provide a valid email'
@@ -27,12 +28,19 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['student', 'teacher', 'admin'],
+      enum: ['student', 'teacher', 'admin', 'superadmin'],
       default: 'student',
-      required: true
+      required: true,
+      index: true // Add index for role-based queries
     },
-    className: {
+    status: {
       type: String,
+      enum: ['pending', 'approved'],
+      default: 'approved'
+    },
+    class: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Class",
       required: function() {
         return this.role === 'student';
       }
@@ -40,7 +48,8 @@ const userSchema = new mongoose.Schema(
     ecoPoints: {
       type: Number,
       default: 0,
-      min: [0, 'Eco points cannot be negative']
+      min: [0, 'Eco points cannot be negative'],
+      index: true // Add index for analytics and sorting queries
     },
     gamesPlayed: {
       type: Number,
@@ -50,6 +59,53 @@ const userSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true
+    },
+    otp: {
+      type: String,
+      default: null
+    },
+    otpExpiry: {
+      type: Date,
+      default: null
+    },
+    isVerified: {
+      type: Boolean,
+      default: false
+    },
+    isFirstLogin: {
+      type: Boolean,
+      default: true
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false
+    },
+    deletedAt: {
+      type: Date,
+      default: null
+    },
+    school: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "School"
+    },
+    unlockedItems: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'RewardItem'
+      }
+    ],
+    isSuperAdmin: {
+      type: Boolean,
+      default: false
+    },
+    streak: {
+      type: Number,
+      default: 0,
+      min: [0, 'Streak cannot be negative']
+    },
+    lastTaskCompletedDate: {
+      type: Date,
+      default: null
     }
   },
   {
@@ -60,6 +116,11 @@ const userSchema = new mongoose.Schema(
 // Hash password before saving
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) {
+    return next();
+  }
+
+  // Avoid double hashing a password already stored as bcrypt hash
+  if (typeof this.password === 'string' && /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(this.password)) {
     return next();
   }
 

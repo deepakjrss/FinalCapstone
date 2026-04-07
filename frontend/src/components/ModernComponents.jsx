@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { motion } from 'framer-motion';
 
 // ==================== MODERN CARD ====================
 export const ModernCard = ({
@@ -15,7 +16,7 @@ export const ModernCard = ({
   ...props
 }) => {
   const baseClasses = `
-    bg-white rounded-xl transition-all duration-300
+    bg-white dark:bg-gray-800 rounded-xl transition-all duration-300 border border-gray-200 dark:border-gray-700
     ${shadow === 'md' && 'shadow-md hover:shadow-lg'}
     ${shadow === 'lg' && 'shadow-lg hover:shadow-xl'}
     p-6
@@ -49,10 +50,10 @@ export const ModernStatCard = ({
     <ModernCard shadow="md" {...props}>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-600 uppercase tracking-widest">
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-widest">
             {label}
           </p>
-          <p className="text-3xl font-bold text-gray-900 mt-2">{value}</p>
+          <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">{value}</p>
           {(change || trend) && (
             <p className={`text-sm mt-2 ${changeColor}`}>
               {change && <>{change} {changeType === 'positive' ? '↑' : changeType === 'negative' ? '↓' : ''}</>}
@@ -85,11 +86,11 @@ export const ModernButton = ({
     'inline-flex items-center justify-center font-semibold rounded-lg transition-all duration-300 active:scale-95';
 
   const variantClasses = {
-    primary: 'bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg disabled:bg-gray-400',
-    secondary: 'bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-300 disabled:bg-gray-100',
-    outline: 'border-2 border-green-600 text-green-600 hover:bg-green-50 disabled:border-gray-300 disabled:text-gray-400',
-    danger: 'bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg disabled:bg-gray-400',
-    ghost: 'text-gray-700 hover:bg-gray-100 disabled:text-gray-400',
+    primary: 'bg-green-600 hover:bg-green-700 dark:hover:bg-green-800 text-white shadow-md hover:shadow-lg disabled:bg-gray-400 dark:disabled:bg-gray-600',
+    secondary: 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 disabled:bg-gray-100 dark:disabled:bg-gray-700',
+    outline: 'border-2 border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 disabled:border-gray-300 disabled:text-gray-400',
+    danger: 'bg-red-600 hover:bg-red-700 dark:hover:bg-red-800 text-white shadow-md hover:shadow-lg disabled:bg-gray-400 dark:disabled:bg-gray-600',
+    ghost: 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:text-gray-400',
   };
 
   const sizeClasses = {
@@ -99,15 +100,18 @@ export const ModernButton = ({
   };
 
   return (
-    <button
+    <motion.button
       className={`
         ${baseClasses}
         ${variantClasses[variant]}
         ${sizeClasses[size]}
-        ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}
+        ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
         ${className}
       `.trim()}
       disabled={disabled || loading}
+      whileHover={disabled ? {} : { scale: 1.05 }}
+      whileTap={disabled ? {} : { scale: 0.95 }}
+      transition={{ type: "spring", stiffness: 400, damping: 17 }}
       {...props}
     >
       {loading && (
@@ -115,7 +119,7 @@ export const ModernButton = ({
       )}
       {Icon && <Icon className="w-5 h-5" />}
       {children}
-    </button>
+    </motion.button>
   );
 };
 
@@ -133,8 +137,8 @@ export const ModernSection = ({
       {(title || subtitle || headerAction) && (
         <div className="flex items-start justify-between gap-4">
           <div>
-            {title && <h2 className="text-2xl font-bold text-gray-900">{title}</h2>}
-            {subtitle && <p className="text-gray-600 text-sm mt-1">{subtitle}</p>}
+            {title && <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{title}</h2>}
+            {subtitle && <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">{subtitle}</p>}
           </div>
           {headerAction && <div className="flex-shrink-0">{headerAction}</div>}
         </div>
@@ -192,29 +196,30 @@ export const ModernInput = ({
   return (
     <div className="space-y-2">
       {label && (
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           {label}
         </label>
       )}
       <div className="relative">
         {Icon && (
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Icon className="h-5 w-5 text-gray-400" />
+            <Icon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
           </div>
         )}
         <input
           type={type}
           placeholder={placeholder}
           className={`
-            w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300
+            w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-all duration-300
+            bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
             ${Icon ? 'pl-10' : ''}
-            ${error ? 'border-red-500 bg-red-50' : 'border-gray-300'}
+            ${error ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-gray-600'}
           `.trim()}
           {...props}
         />
       </div>
-      {error && <p className="text-sm text-red-600 font-medium">{error}</p>}
-      {helperText && !error && <p className="text-sm text-gray-500">{helperText}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400 font-medium">{error}</p>}
+      {helperText && !error && <p className="text-sm text-gray-500 dark:text-gray-400">{helperText}</p>}
     </div>
   );
 };
@@ -229,14 +234,15 @@ export const ModernSelect = ({
   return (
     <div className="space-y-2">
       {label && (
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           {label}
         </label>
       )}
       <select
         className={`
-          w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 appearance-none cursor-pointer
-          ${error ? 'border-red-500 bg-red-50' : 'border-gray-300'}
+          w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-all duration-300 appearance-none cursor-pointer
+          bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+          ${error ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-gray-600'}
         `.trim()}
         {...props}
       >
@@ -247,7 +253,7 @@ export const ModernSelect = ({
           </option>
         ))}
       </select>
-      {error && <p className="text-sm text-red-600 font-medium">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400 font-medium">{error}</p>}
     </div>
   );
 };
@@ -260,11 +266,11 @@ export const ModernBadge = ({
   ...props
 }) => {
   const variants = {
-    default: 'bg-gray-100 text-gray-800',
-    success: 'bg-green-100 text-green-800',
-    warning: 'bg-yellow-100 text-yellow-800',
-    info: 'bg-blue-100 text-blue-800',
-    danger: 'bg-red-100 text-red-800',
+    default: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200',
+    success: 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400',
+    warning: 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400',
+    info: 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400',
+    danger: 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400',
   };
 
   return (
@@ -291,7 +297,7 @@ export const ModernContainer = ({
 
 // ==================== MODERN DIVIDER ====================
 export const ModernDivider = ({ className = '' }) => {
-  return <hr className={`border-t border-gray-200 ${className}`} />;
+  return <hr className={`border-t border-gray-200 dark:border-gray-700 ${className}`} />;
 };
 
 // ==================== MODERN SKELETON ====================
@@ -308,7 +314,7 @@ export const ModernSkeleton = ({ count = 1, height = 'h-10' }) => {
   );
 };
 
-export default {
+const modernComponents = {
   ModernCard,
   ModernStatCard,
   ModernButton,
@@ -321,3 +327,5 @@ export default {
   ModernDivider,
   ModernSkeleton,
 };
+
+export default modernComponents;

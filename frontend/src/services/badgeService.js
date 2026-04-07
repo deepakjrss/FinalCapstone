@@ -1,23 +1,4 @@
-import axios from 'axios';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-
-// Create axios instance with base config
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add token to requests
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+import api from '../utils/api';
 
 // Badge Service
 const badgeService = {
@@ -27,7 +8,7 @@ const badgeService = {
    */
   getMyBadges: async () => {
     try {
-      const response = await apiClient.get('/badges/my');
+      const response = await api.get('/badges/my');
       return {
         success: true,
         data: response.data.badges,
@@ -47,7 +28,7 @@ const badgeService = {
    */
   getBadgeProgress: async () => {
     try {
-      const response = await apiClient.get('/badges/progress');
+      const response = await api.get('/badges/progress');
       return {
         success: true,
         data: response.data.progress,
@@ -68,7 +49,7 @@ const badgeService = {
    */
   getAllBadges: async () => {
     try {
-      const response = await apiClient.get('/badges/admin/all');
+      const response = await api.get('/badges/admin/all');
       return {
         success: true,
         data: response.data.badges,
@@ -89,7 +70,7 @@ const badgeService = {
    */
   createBadge: async (badgeData) => {
     try {
-      const response = await apiClient.post('/badges/admin/create', badgeData);
+      const response = await api.post('/badges/admin/create', badgeData);
       return {
         success: true,
         data: response.data.badge,

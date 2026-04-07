@@ -1,23 +1,4 @@
-import axios from 'axios';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-
-// Create axios instance with base config
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add token to requests
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+import api from '../utils/api';
 
 // Game Service
 const gameService = {
@@ -27,7 +8,7 @@ const gameService = {
    */
   getAvailableGames: async () => {
     try {
-      const response = await apiClient.get('/games');
+      const response = await api.get('/games');
       return {
         success: true,
         data: response.data.games,
@@ -47,7 +28,7 @@ const gameService = {
    */
   getGameById: async (gameId) => {
     try {
-      const response = await apiClient.get(`/games/${gameId}`);
+      const response = await api.get(`/games/${gameId}`);
       return {
         success: true,
         data: response.data.game,
@@ -66,16 +47,27 @@ const gameService = {
    * @param {array} answers - Array of selected answer indices
    * @returns {Promise} Attempt result and points earned
    */
-  submitGameAttempt: async (gameId, answers) => {
+  submitGameAttempt: async (gameId, answers, questions=null) => {
     try {
-      const response = await apiClient.post('/games/submit', {
-        gameId,
-        answers,
-      });
+      const payload = { gameId, answers };
+      if (questions) payload.questions = questions;
+      const response = await api.post('/games/submit', payload);
       return {
         success: true,
         data: response.data,
       };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message,
+      };
+    }
+  },
+  
+  generateQuiz: async () => {
+    try {
+      const response = await api.get('/games/generate-quiz');
+      return { success: true, data: response.data };
     } catch (error) {
       return {
         success: false,
@@ -90,7 +82,7 @@ const gameService = {
    */
   getGameStats: async () => {
     try {
-      const response = await apiClient.get('/games/stats/progress');
+      const response = await api.get('/games/stats/progress');
       return {
         success: true,
         data: response.data.stats,
@@ -114,11 +106,23 @@ const gameService = {
       if (gameId) {
         url += `?gameId=${gameId}`;
       }
-      const response = await apiClient.get(url);
+      const response = await api.get(url);
       return {
         success: true,
         data: response.data.attempts,
       };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message,
+      };
+    }
+  },
+
+  addPoints: async (points) => {
+    try {
+      const response = await api.post('/users/add-points', { points });
+      return { success: true, data: response.data };
     } catch (error) {
       return {
         success: false,

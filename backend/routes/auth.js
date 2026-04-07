@@ -5,6 +5,78 @@ const { verifyToken, authorizeRoles } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Send registration OTP route
+router.post(
+  '/send-register-otp',
+  [
+    body('email')
+      .isEmail()
+      .withMessage('Invalid email format')
+      .normalizeEmail()
+  ],
+  authController.sendRegisterOTP
+);
+
+// Verify registration OTP route
+router.post(
+  '/verify-register-otp',
+  [
+    body('email')
+      .isEmail()
+      .withMessage('Invalid email format')
+      .normalizeEmail(),
+    body('otp')
+      .trim()
+      .notEmpty()
+      .withMessage('OTP is required')
+      .isLength({ min: 6, max: 6 })
+      .withMessage('OTP must be 6 digits')
+  ],
+  authController.verifyRegisterOTP
+);
+
+// Send OTP route
+router.post(
+  '/send-otp',
+  [
+    body('email')
+      .isEmail()
+      .withMessage('Invalid email format')
+      .normalizeEmail()
+  ],
+  authController.sendOTP
+);
+
+// Verify OTP route
+router.post(
+  '/verify-otp',
+  [
+    body('email')
+      .isEmail()
+      .withMessage('Invalid email format')
+      .normalizeEmail(),
+    body('otp')
+      .trim()
+      .notEmpty()
+      .withMessage('OTP is required')
+      .isLength({ min: 6, max: 6 })
+      .withMessage('OTP must be 6 digits')
+  ],
+  authController.verifyOTP
+);
+
+// Resend OTP route
+router.post(
+  '/resend-otp',
+  [
+    body('email')
+      .isEmail()
+      .withMessage('Invalid email format')
+      .normalizeEmail()
+  ],
+  authController.resendOTP
+);
+
 // Register route with validation
 router.post(
   '/register',
@@ -23,12 +95,19 @@ router.post(
       .isLength({ min: 6 })
       .withMessage('Password must be at least 6 characters'),
     body('role')
-      .isIn(['student', 'teacher', 'admin'])
+      .isIn(['student', 'teacher'])
       .withMessage('Invalid role'),
-    body('className')
+    body('schoolId')
+      .notEmpty()
+      .withMessage('School is required'),
+    body('inviteCode')
+      .trim()
+      .notEmpty()
+      .withMessage('Invite code is required'),
+    body('classId')
       .custom((value, { req }) => {
         if (req.body.role === 'student' && !value) {
-          throw new Error('className is required for students');
+          throw new Error('Class is required for students');
         }
         return true;
       })
@@ -49,6 +128,39 @@ router.post(
       .withMessage('Password is required')
   ],
   authController.login
+);
+
+// Verify password and send login OTP
+router.post(
+  '/login-otp',
+  [
+    body('email')
+      .isEmail()
+      .withMessage('Invalid email format')
+      .normalizeEmail(),
+    body('password')
+      .notEmpty()
+      .withMessage('Password is required')
+  ],
+  authController.verifyPasswordAndSendOTP
+);
+
+// Verify login OTP and return JWT
+router.post(
+  '/verify-login-otp',
+  [
+    body('email')
+      .isEmail()
+      .withMessage('Invalid email format')
+      .normalizeEmail(),
+    body('otp')
+      .trim()
+      .notEmpty()
+      .withMessage('OTP is required')
+      .isLength({ min: 6, max: 6 })
+      .withMessage('OTP must be 6 digits')
+  ],
+  authController.verifyLoginOTP
 );
 
 // Protected routes

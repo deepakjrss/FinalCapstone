@@ -24,7 +24,7 @@ const Achievements = () => {
       setLoading(true);
       setError(null);
 
-      const result = await badgeService.getMyBadges();
+      const result = await badgeService.getBadgeProgress();
 
       if (result.success) {
         setBadges(result.data);
@@ -115,50 +115,122 @@ const Achievements = () => {
             {!loading && !error && badges.length > 0 && (
               <>
                 <ModernSection
-                  title={`Earned Badges (${badges.length})`}
-                  subtitle="Amazing accomplishments! Keep going! 🌟"
+                  title={`Your Achievements (${badges.filter(b => b.earned).length}/${badges.length})`}
+                  subtitle="Track your progress and unlock amazing badges!"
                 >
                   <ModernGrid columns={3}>
-                    {badges.map((badge) => (
-                      <ModernCard key={badge._id} interactive>
-                        {/* Top Bar */}
-                        <div className="h-1 bg-gradient-to-r from-green-400 to-emerald-500 -mx-6 -mt-6 mb-4" />
+                    {badges.map((badge) => {
+                      const unlocked = badge.unlocked || badge.earned;
+                      const statusLabel = badge.status || (unlocked ? 'Completed' : 'In Progress');
+                      return (
+                        <ModernCard
+                          key={badge.badge._id}
+                          interactive={!unlocked}
+                          className={`transition-all duration-500 ${
+                            unlocked
+                              ? 'bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 border-green-300 shadow-lg hover:shadow-xl ring-2 ring-green-200 transform hover:scale-105 animate-pulse'
+                              : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                          }`}>
 
-                        {/* Badge Icon */}
-                        <div className="text-6xl mb-4 transform hover:scale-110 transition-transform duration-300">
-                          {badge.icon}
+                        {/* Top Bar - Different colors for earned/locked */}
+                        <div className={`h-1 -mx-6 -mt-6 mb-4 rounded-t-lg ${
+                          unlocked
+                            ? 'bg-gradient-to-r from-green-400 via-emerald-500 to-teal-600 shadow-md'
+                            : 'bg-gradient-to-r from-gray-300 to-gray-400'
+                        }`} />
+
+                        {/* Badge Icon - Enhanced styling for unlocked badges */}
+                        <div className={`text-6xl mb-4 transform transition-all duration-500 ${
+                          unlocked
+                            ? 'hover:scale-110 drop-shadow-lg animate-bounce text-green-600 filter brightness-110'
+                            : 'grayscale opacity-50'
+                        }`}>
+                          {badge.badge.icon}
                         </div>
 
                         {/* Badge Info */}
-                        <h3 className="text-lg font-bold text-gray-900 mb-2">
-                          {badge.name}
+                        <h3 className={`text-lg font-bold mb-2 ${
+                          unlocked ? 'text-green-800' : 'text-gray-500'
+                        }`}>
+                          {badge.badge.name}
                         </h3>
 
-                        <p className="text-gray-600 text-sm mb-4 leading-relaxed">
-                          {badge.description}
+                        <p className={`text-sm mb-4 leading-relaxed ${
+                          unlocked ? 'text-green-700' : 'text-gray-400'
+                        }`}>
+                          {badge.badge.description}
                         </p>
 
-                        {/* Condition Info */}
-                        <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
-                          <p className="text-xs font-semibold text-green-700">
-                            Condition: {badge.conditionType === 'ecoPoints' ? '💚 Eco Points' : '🎮 Games Played'}
-                          </p>
-                          <p className="text-xs text-green-600 mt-1">
-                            Threshold: {badge.threshold}
-                          </p>
+                        {/* Progress Bar for Locked Badges ONLY */}
+                        {!unlocked && (
+                          <div className="mb-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs font-semibold text-gray-500">
+                                Progress: {Math.round(badge.progress)}%
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                {badge.badge.conditionType === 'ecoPoints' ? '💚 Eco Points' :
+                                 badge.badge.conditionType === 'gamesPlayed' ? '🎮 Games' :
+                                 badge.badge.conditionType === 'streak' ? '🔥 Streak' : 'Target'}
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                              <div
+                                className="h-full bg-gradient-to-r from-blue-400 to-blue-600 transition-all duration-500 ease-out"
+                                style={{ width: `${badge.progress}%` }}
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Status Display */}
+                        <div className={`mb-4 p-3 rounded-lg border ${
+                          unlocked
+                            ? 'bg-green-50 border-green-200 shadow-sm'
+                            : 'bg-gray-50 border-gray-200'
+                        }`}>
+                          <div className="flex items-center justify-between">
+                            <p className={`text-xs font-semibold ${
+                              unlocked ? 'text-green-700' : 'text-gray-600'
+                            }`}>
+                              {badge.badge.conditionType === 'ecoPoints' && `💚 ${badge.badge.threshold} eco-points`}
+                              {badge.badge.conditionType === 'gamesPlayed' && `🎮 ${badge.badge.threshold} games`}
+                              {badge.badge.conditionType === 'streak' && `🔥 ${badge.badge.threshold}-day streak`}
+                            </p>
+                            <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                              unlocked
+                                ? 'bg-green-500 text-white'
+                                : 'bg-blue-500 text-white'
+                            }`}>
+                              {statusLabel}
+                            </span>
+                          </div>
                         </div>
 
                         {/* Footer */}
                         <div className="flex items-center justify-between border-t border-gray-200 pt-4">
-                          <span className="text-sm text-gray-500">
-                            📅 {formatDate(badge.earnedAt)}
-                          </span>
-                          <span className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-                            ✓ Earned
-                          </span>
+                          {unlocked ? (
+                            <>
+                              <span className="text-sm text-green-600 font-medium">
+                                📅 {badge.earnedAt ? formatDate(badge.earnedAt) : 'Unlocked'}
+                              </span>
+                              <span className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md">
+                                ✅ Completed
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-sm text-gray-400">
+                                🔒 Locked
+                              </span>
+                              <span className="bg-gradient-to-r from-gray-400 to-gray-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                                ⏳ In Progress
+                              </span>
+                            </>
+                          )}
                         </div>
                       </ModernCard>
-                    ))}
+                    )})}
                   </ModernGrid>
                 </ModernSection>
 
@@ -167,18 +239,18 @@ const Achievements = () => {
                   <ModernGrid columns={3} responsive>
                     <ModernStatCard
                       icon="🏅"
+                      label="Badges Earned"
+                      value={badges.filter(b => b.earned).length}
+                    />
+                    <ModernStatCard
+                      icon="🎯"
                       label="Total Badges"
                       value={badges.length}
                     />
                     <ModernStatCard
-                      icon="🌟"
-                      label="Progress Status"
-                      value={badges.length > 0 ? 'Progressing' : 'Starting'}
-                    />
-                    <ModernStatCard
-                      icon="🎯"
-                      label="Keep Growing!"
-                      value="On Track"
+                      icon="📈"
+                      label="Completion Rate"
+                      value={`${Math.round((badges.filter(b => b.earned).length / badges.length) * 100)}%`}
                     />
                   </ModernGrid>
                 </ModernSection>

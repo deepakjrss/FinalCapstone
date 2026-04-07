@@ -1,21 +1,4 @@
-import axios from 'axios';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+import api from '../utils/api';
 
 const chatService = {
   /**
@@ -24,7 +7,22 @@ const chatService = {
    */
   sendMessage: async (message) => {
     try {
-      const response = await apiClient.post('/chat', { message });
+      const response = await api.post('/chat', { message });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message,
+      };
+    }
+  },
+
+  /**
+   * Check AI health
+   */
+  checkHealth: async () => {
+    try {
+      const response = await api.get('/chat/health');
       return { success: true, data: response.data };
     } catch (error) {
       return {

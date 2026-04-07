@@ -77,9 +77,9 @@ const GameQuizModal = ({ gameId, onClose, onSubmitSuccess }) => {
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 text-center">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-2xl w-full mx-4 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-700">Loading game...</p>
+          <p className="text-gray-700 dark:text-gray-300">Loading game...</p>
         </div>
       </div>
     );
@@ -89,7 +89,7 @@ const GameQuizModal = ({ gameId, onClose, onSubmitSuccess }) => {
     const passed = result.attempt.passed;
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-md w-full mx-4">
           <div className="text-center">
             <div className="text-6xl mb-4">
               {passed ? '🎉' : '📚'}
@@ -97,23 +97,23 @@ const GameQuizModal = ({ gameId, onClose, onSubmitSuccess }) => {
             <h2 className={`text-2xl font-bold mb-2 ${passed ? 'text-green-600' : 'text-blue-600'}`}>
               {passed ? 'Great Job!' : 'Quiz Completed!'}
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
               You scored <span className="font-semibold text-lg">{result.attempt.score.toFixed(1)}%</span>
             </p>
 
-            <div className="bg-gray-50 rounded-lg p-4 mb-6 grid grid-cols-2 gap-4">
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6 grid grid-cols-2 gap-4">
               <div>
-                <p className="text-gray-600 text-sm">Correct Answers</p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">Correct Answers</p>
                 <p className="text-2xl font-bold text-green-600">{result.attempt.correctAnswers}/{result.attempt.totalQuestions}</p>
               </div>
               <div>
-                <p className="text-gray-600 text-sm">Points Earned</p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">Points Earned</p>
                 <p className="text-2xl font-bold text-purple-600">+{result.attempt.pointsEarned}</p>
               </div>
             </div>
 
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-              <p className="text-sm text-gray-700">
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
+              <p className="text-sm text-gray-700 dark:text-gray-300">
                 <span className="font-semibold">Your Class Forest:</span><br />
                 Eco Score: <span className="font-bold">{result.forest.ecoScore}</span> ({result.forest.forestState})
               </p>
@@ -134,11 +134,11 @@ const GameQuizModal = ({ gameId, onClose, onSubmitSuccess }) => {
   if (!game) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
-          <p className="text-red-600">{error || 'Game not found'}</p>
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-md w-full mx-4">
+          <p className="text-red-600 dark:text-red-400">{error || 'Game not found'}</p>
           <button
             onClick={onClose}
-            className="w-full mt-4 px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition"
+            className="w-full mt-4 px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition"
           >
             Close
           </button>
@@ -152,7 +152,7 @@ const GameQuizModal = ({ gameId, onClose, onSubmitSuccess }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6">
           <div className="flex justify-between items-start">
@@ -180,13 +180,13 @@ const GameQuizModal = ({ gameId, onClose, onSubmitSuccess }) => {
         {/* Content */}
         <div className="p-6">
           {error && (
-            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">
+            <div className="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-red-700 dark:text-red-400 text-sm">
               {error}
             </div>
           )}
 
           {/* Question Text */}
-          <h3 className="text-xl font-semibold text-gray-800 mb-6">
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">
             {question.questionText}
           </h3>
 
@@ -198,7 +198,7 @@ const GameQuizModal = ({ gameId, onClose, onSubmitSuccess }) => {
                 className="flex items-center p-4 border-2 rounded-lg cursor-pointer transition"
                 style={{
                   borderColor: answers[currentQuestion] === index ? '#22c55e' : '#e5e7eb',
-                  backgroundColor: answers[currentQuestion] === index ? '#f0fdf4' : '#ffffff',
+                  backgroundColor: answers[currentQuestion] === index ? '#f0fdf4' : 'transparent',
                 }}
               >
                 <input
@@ -209,15 +209,15 @@ const GameQuizModal = ({ gameId, onClose, onSubmitSuccess }) => {
                   onChange={() => handleAnswerSelect(index)}
                   className="w-4 h-4 text-green-600 cursor-pointer"
                 />
-                <span className="ml-3 text-gray-800">{option}</span>
+                <span className="ml-3 text-gray-800 dark:text-gray-100">{option}</span>
               </label>
             ))}
           </div>
 
           {/* Explanation if available */}
           {question.explanation && answers[currentQuestion] !== -1 && (
-            <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm text-gray-700">
+            <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <p className="text-sm text-gray-700 dark:text-gray-300">
                 <span className="font-semibold">💡 Explanation: </span>
                 {question.explanation}
               </p>

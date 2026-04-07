@@ -16,6 +16,8 @@ const verifyToken = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     const user = await User.findById(decoded.userId);
+    console.log('DEBUG verifyToken decoded:', decoded);
+    console.log('DEBUG verifyToken user fetch:', user);
     
     if (!user) {
       return res.status(401).json({
@@ -57,7 +59,7 @@ const verifyToken = async (req, res, next) => {
 };
 
 // Authorize specific roles
-const authorizeRoles = (...allowedRoles) => {
+const authorizeRoles = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({
@@ -66,10 +68,10 @@ const authorizeRoles = (...allowedRoles) => {
       });
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
+    if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
-        message: `User role '${req.user.role}' is not authorized to access this resource`
+        message: 'Access denied. Insufficient privileges.'
       });
     }
 
@@ -77,4 +79,23 @@ const authorizeRoles = (...allowedRoles) => {
   };
 };
 
-module.exports = { verifyToken, authorizeRoles };
+// Verify Super Admin access
+const verifySuperAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: 'Authentication required'
+    });
+  }
+
+  if (!req.user.isSuperAdmin) {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied. Super admin privileges required.'
+    });
+  }
+
+  next();
+};
+
+module.exports = { verifyToken, authorizeRoles, verifySuperAdmin };
